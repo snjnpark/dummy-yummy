@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "My Chrome Extension",
+  "name": "dummy-yummy",
   "version": "1.0",
-  "description": "A simple Chrome extension.",
+  "description": "귀찮은 웹 양식을 더미 데이터로 채워드립니다.",
   "permissions": ["storage", "activeTab", "scripting"],
   "action": {
     "default_popup": "popup.html",

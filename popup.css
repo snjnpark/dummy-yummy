@@ -1,0 +1,114 @@
+body {
+  width: 300px; /* Increased width for better spacing */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+  padding: 15px; /* Increased padding */
+  background-color: #f4f7f6;
+  color: #333;
+}
+
+h1 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 20px; /* More space below heading */
+  color: #2c3e50;
+  font-size: 24px;
+}
+
+.toggle-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px; /* Increased margin */
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px; /* Slightly smaller switch */
+  height: 28px;
+  margin: 0 15px; /* Increased margin */
+}
+
+.switch input { display: none; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 28px; /* Match height for full roundness */
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px; /* Smaller handle */
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider { background-color: #4CAF50; /* Green for active */ }
+input:checked + .slider:before { transform: translateX(22px); /* Adjust for new width */ }
+
+#manual-settings {
+  border-top: 1px solid #eee; /* Lighter border */
+  padding-top: 15px; /* Increased padding */
+  margin-top: 15px;
+}
+
+.manual-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px; /* Increased margin */
+  gap: 10px; /* Space between items */
+}
+
+.manual-item label {
+  width: 70px; /* Adjusted width for labels */
+  font-size: 13px;
+  color: #555;
+}
+
+.manual-item input[type="checkbox"] {
+  margin-right: 5px; /* Space between checkbox and label */
+  transform: scale(1.2); /* Slightly larger checkbox */
+}
+
+.manual-item input[type="text"] {
+  flex-grow: 1;
+  padding: 8px; /* Padding for text inputs */
+  border: 1px solid #ddd; /* Lighter border */
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.manual-item input[type="text"]::placeholder {
+  color: #aaa;
+}
+
+.hidden { display: none; }
+
+#fill-form {
+  width: 100%;
+  padding: 12px; /* Larger padding for button */
+  margin-top: 20px; /* More space above button */
+  border: none; /* No border */
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #007bff; /* Blue button */
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+#fill-form:hover {
+  background-color: #0056b3;
+}
