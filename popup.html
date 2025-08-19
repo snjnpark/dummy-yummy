@@ -2,30 +2,109 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>My Extension</title>
+  <title>Dummy Yummy</title>
   <style>
     body {
-      width: 200px;
-      text-align: center;
+      width: 250px;
       font-family: sans-serif;
-    }
-    button {
-      width: 150px;
       padding: 10px;
-      margin: 10px auto;
+    }
+    h1 { text-align: center; margin-top: 0; }
+    .toggle-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+      margin: 0 10px;
+    }
+    .switch input { display: none; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #2196F3; }
+    input:checked + .slider:before { transform: translateX(26px); }
+
+    #manual-settings { border-top: 1px solid #ccc; padding-top: 10px; }
+    .manual-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .manual-item label { width: 60px; }
+    .manual-item input[type="text"] { flex-grow: 1; }
+    .hidden { display: none; }
+
+    #fill-form {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
       border: 1px solid #ccc;
       border-radius: 5px;
       cursor: pointer;
       background-color: #f0f0f0;
     }
-    button:hover {
-      background-color: #e0e0e0;
-    }
+    #fill-form:hover { background-color: #e0e0e0; }
   </style>
 </head>
 <body>
   <h1>Dummy Yummy</h1>
+
+  <div class="toggle-container">
+    <span>자동</span>
+    <label class="switch">
+      <input type="checkbox" id="mode-toggle">
+      <span class="slider"></span>
+    </label>
+    <span>수동</span>
+  </div>
+
+  <div id="manual-settings" class="hidden">
+    <div class="manual-item">
+      <input type="checkbox" id="manual-email-enabled" data-type="email">
+      <label for="manual-email-enabled">이메일</label>
+      <input type="text" id="manual-email-text" data-type="email" placeholder="찾을 텍스트 (예: 이메일 주소)">
+    </div>
+    <div class="manual-item">
+      <input type="checkbox" id="manual-name-enabled" data-type="name">
+      <label for="manual-name-enabled">이름</label>
+      <input type="text" id="manual-name-text" data-type="name" placeholder="찾을 텍스트 (예: 성함)">
+    </div>
+    <div class="manual-item">
+      <input type="checkbox" id="manual-company-enabled" data-type="company">
+      <label for="manual-company-enabled">회사명</label>
+      <input type="text" id="manual-company-text" data-type="company" placeholder="찾을 텍스트 (예: 회사명)">
+    </div>
+    <div class="manual-item">
+      <input type="checkbox" id="manual-phone-enabled" data-type="phone">
+      <label for="manual-phone-enabled">전화번호</label>
+      <input type="text" id="manual-phone-text" data-type="phone" placeholder="찾을 텍스트 (예: 연락처)">
+    </div>
+  </div>
+
   <button id="fill-form">가짜 정보 입력</button>
+
   <script src="popup.js"></script>
 </body>
 </html>
