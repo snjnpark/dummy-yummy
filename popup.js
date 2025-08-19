@@ -188,35 +188,66 @@ function fillFormsInPage(settings) {
     // --- 자동 모드 로직 (기존 content.js 로직) ---
     function getFieldType(input) {
       const attrs = [input.id, input.name, input.placeholder, input.getAttribute('aria-label') || ''].join(' ').toLowerCase();
-      if (/e-?mail|메일|업무\s?메일/.test(attrs)) return 'email';
-      if (/full-?name|성함/.test(attrs)) return 'fullName';
-      if (/last-?name|lname|성/.test(attrs) && !/first-?name|fname|이름/.test(attrs)) return 'lastName';
-      if (/first-?name|fname|이름/.test(attrs) && !/last-?name|lname|성/.test(attrs)) return 'firstName';
+      if (/e-?mail(?:\s*address)?|메일(?:\s*주소)?|전자우s?우편|email\s*address/i.test(attrs)) return 'email';
+      if (/full-?name|성함|성명|전체\s*이름/i.test(attrs)) return 'fullName';
+      if (/last-?name|lname|성|surname|성씨/i.test(attrs) && !/first-?name|fname|이름/.test(attrs)) return 'lastName';
+      if (/first-?name|fname|이름|given\s*name|명/i.test(attrs) && !/last-?name|lname|성/.test(attrs)) return 'firstName';
       if (/name|이름/.test(attrs)) return 'name';
-      if (/company|organization|기업|회사명?/.test(attrs)) return 'company';
-      if (/phone|mobile|tel|전화/.test(attrs)) return 'phone';
+      if (/company(?:\s*name)?|organization(?:\s*name)?|기업|회사명?|회사|기관|소속/i.test(attrs)) return 'company';
+      if (/phone(?:\s*number)?|mobile(?:\s*number)?|tel(?:ephone)?|전화|휴대폰|연락처|전화번호|010[\s.-]?\d{4}[\s.-]?\d{4}/i.test(attrs)) return 'phone';
       return null;
     }
 
     const inputs = Array.from(document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input:not([type])'));
-    const lastNameInput = inputs.find(input => !input.value && getFieldType(input) === 'lastName');
-    const firstNameInput = inputs.find(input => !input.value && getFieldType(input) === 'firstName');
+    let foundLastNameInput = null;
+    let foundFirstNameInput = null;
+    let foundFullNameInput = null;
+    let foundGeneralNameInput = null;
 
-    if (lastNameInput && firstNameInput) {
-      lastNameInput.value = getFakeLastName();
-      dispatchEvents(lastNameInput);
-      firstNameInput.value = getFakeFirstName();
-      dispatchEvents(firstNameInput);
-    } else {
-      const fullNameInput = inputs.find(input => {
-        if (input.value) return false;
-        const type = getFieldType(input);
-        return type === 'fullName' || type === 'name' || type === 'firstName';
-      });
-      if (fullNameInput) {
-        fullNameInput.value = getFakeFullName();
-        dispatchEvents(fullNameInput);
+    // First pass: Identify all potential name fields
+    inputs.forEach(input => {
+      if (input.value || input.disabled || input.readOnly) return; // Skip already filled or disabled fields
+      const fieldType = getFieldType(input);
+
+      if (fieldType === 'lastName' && !foundLastNameInput) {
+        foundLastNameInput = input;
+      } else if (fieldType === 'firstName' && !foundFirstNameInput) {
+        foundFirstNameInput = input;
+      } else if (fieldType === 'fullName' && !foundFullNameInput) {
+        foundFullNameInput = input;
+      } else if (fieldType === 'name' && !foundGeneralNameInput) {
+        foundGeneralNameInput = input;
       }
+    });
+
+    // Helper to check if two elements are siblings and close
+    function areSiblingsClose(el1, el2) {
+      if (!el1 || !el2 || el1.parentNode !== el2.parentNode) return false;
+      const children = Array.from(el1.parentNode.children);
+      const idx1 = children.indexOf(el1);
+      const idx2 = children.indexOf(el2);
+      return Math.abs(idx1 - idx2) <= 2; // Within 2 elements of each other
+    }
+
+    // Second pass: Decision Logic
+    if (foundLastNameInput && foundFirstNameInput && areSiblingsClose(foundLastNameInput, foundFirstNameInput)) {
+      // Scenario 1: Separate First/Last Name Fields (and they are close)
+      foundLastNameInput.value = getFakeLastName();
+      dispatchEvents(foundLastNameInput);
+      foundFirstNameInput.value = getFakeFirstName();
+      dispatchEvents(foundFirstNameInput);
+    } else if (foundFullNameInput) {
+      // Scenario 2: Single Full Name Field (prioritize if found)
+      foundFullNameInput.value = getFakeFullName();
+      dispatchEvents(foundFullNameInput);
+    } else if (foundFirstNameInput) {
+      // Scenario 3: Only firstName found, treat as fullName (e.g., "Name" field that was identified as firstName)
+      foundFirstNameInput.value = getFakeFullName(); // Fill with full name
+      dispatchEvents(foundFirstNameInput);
+    } else if (foundGeneralNameInput) {
+      // Scenario 4: Only general 'name' field found, treat as fullName
+      foundGeneralNameInput.value = getFakeFullName();
+      dispatchEvents(foundGeneralNameInput);
     }
 
     inputs.forEach(input => {
