@@ -4,19 +4,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const fillFormButton = document.getElementById('fill-form');
   const manualInputs = document.querySelectorAll('#manual-settings input');
 
+  // 이름 관련 체크박스 요소들
+  const lastNameCheckbox = document.getElementById('manual-lastName-enabled');
+  const firstNameCheckbox = document.getElementById('manual-firstName-enabled');
+  const fullNameCheckbox = document.getElementById('manual-fullName-enabled');
+
   function loadSettings() {
     chrome.storage.local.get('settings', (data) => {
       const settings = data.settings || { mode: 'auto', manualConfig: {} };
       const isManual = settings.mode === 'manual';
       modeToggle.checked = isManual;
       manualSettings.classList.toggle('hidden', !isManual);
-      Object.keys(settings.manualConfig).forEach(type => {
-        const config = settings.manualConfig[type];
-        const checkbox = document.querySelector(`input[type="checkbox"][data-type="${type}"]`);
-        const textInput = document.querySelector(`input[type="text"][data-type="${type}"]`);
-        if (checkbox) checkbox.checked = config.enabled;
-        if (textInput) textInput.value = config.text;
+      
+      // 모든 수동 설정 입력 필드에 대해 설정 로드
+      manualInputs.forEach(input => {
+        const type = input.dataset.type;
+        if (!type) return;
+        const config = settings.manualConfig[type] || { enabled: false, text: '' };
+        if (input.type === 'checkbox') {
+          input.checked = config.enabled;
+        } else if (input.type === 'text') {
+          input.value = config.text;
+        }
       });
+      // 로드 후 상호 배타적 로직 적용
+      applyNameCheckboxExclusivity();
     });
   }
 
@@ -25,18 +37,39 @@ document.addEventListener('DOMContentLoaded', () => {
       mode: modeToggle.checked ? 'manual' : 'auto',
       manualConfig: {}
     };
-    const types = ['email', 'name', 'company', 'phone'];
+    const types = ['email', 'lastName', 'firstName', 'fullName', 'company', 'phone']; // 타입 목록 업데이트
     types.forEach(type => {
       const checkbox = document.getElementById(`manual-${type}-enabled`);
       const textInput = document.getElementById(`manual-${type}-text`);
-      settings.manualConfig[type] = {
-        enabled: checkbox.checked,
-        text: textInput.value
-      };
+      if (checkbox && textInput) { // 요소가 존재하는지 확인
+        settings.manualConfig[type] = {
+          enabled: checkbox.checked,
+          text: textInput.value
+        };
+      }
     });
     chrome.storage.local.set({ settings });
   }
 
+  // 이름 관련 체크박스 상호 배타적 로직
+  function applyNameCheckboxExclusivity() {
+    if (fullNameCheckbox.checked) {
+      lastNameCheckbox.checked = false;
+      lastNameCheckbox.disabled = true;
+      firstNameCheckbox.checked = false;
+      firstNameCheckbox.disabled = true;
+    } else if (lastNameCheckbox.checked || firstNameCheckbox.checked) {
+      fullNameCheckbox.checked = false;
+      fullNameCheckbox.disabled = true;
+    } else {
+      lastNameCheckbox.disabled = false;
+      firstNameCheckbox.disabled = false;
+      fullNameCheckbox.disabled = false;
+    }
+    saveSettings(); // 상태 변경 후 저장
+  }
+
+  // 이벤트 리스너
   modeToggle.addEventListener('change', () => {
     manualSettings.classList.toggle('hidden', !modeToggle.checked);
     saveSettings();
@@ -45,6 +78,11 @@ document.addEventListener('DOMContentLoaded', () => {
   manualInputs.forEach(input => {
     input.addEventListener('input', saveSettings);
   });
+
+  // 이름 관련 체크박스에 이벤트 리스너 추가
+  lastNameCheckbox.addEventListener('change', applyNameCheckboxExclusivity);
+  firstNameCheckbox.addEventListener('change', applyNameCheckboxExclusivity);
+  fullNameCheckbox.addEventListener('change', applyNameCheckboxExclusivity);
 
   fillFormButton.addEventListener('click', () => {
     chrome.storage.local.get('settings', (data) => {
@@ -88,7 +126,40 @@ function fillFormsInPage(settings) {
   if (settings.mode === 'manual') {
     // --- 수동 모드 로직 ---
     const inputs = Array.from(document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input:not([type])'));
+    
+    // 이름 관련 필드 처리 (수동 모드)
+    const manualLastNameConfig = settings.manualConfig.lastName;
+    const manualFirstNameConfig = settings.manualConfig.firstName;
+    const manualFullNameConfig = settings.manualConfig.fullName;
+
+    if (manualLastNameConfig && manualLastNameConfig.enabled && manualLastNameConfig.text &&
+        manualFirstNameConfig && manualFirstNameConfig.enabled && manualFirstNameConfig.text) {
+      // 성과 이름이 모두 활성화된 경우
+      const targetLastNameInput = inputs.find(input => !input.value && [input.id, input.name, input.placeholder, input.getAttribute('aria-label') || ''].join(' ').toLowerCase().includes(manualLastNameConfig.text.toLowerCase()));
+      const targetFirstNameInput = inputs.find(input => !input.value && [input.id, input.name, input.placeholder, input.getAttribute('aria-label') || ''].join(' ').toLowerCase().includes(manualFirstNameConfig.text.toLowerCase()));
+
+      if (targetLastNameInput) {
+        targetLastNameInput.value = getFakeLastName();
+        dispatchEvents(targetLastNameInput);
+      }
+      if (targetFirstNameInput) {
+        targetFirstNameInput.value = getFakeFirstName();
+        dispatchEvents(targetFirstNameInput);
+      }
+    } else if (manualFullNameConfig && manualFullNameConfig.enabled && manualFullNameConfig.text) {
+      // 성함이 활성화된 경우
+      const targetFullNameInput = inputs.find(input => !input.value && [input.id, input.name, input.placeholder, input.getAttribute('aria-label') || ''].join(' ').toLowerCase().includes(manualFullNameConfig.text.toLowerCase()));
+      if (targetFullNameInput) {
+        targetFullNameInput.value = getFakeFullName();
+        dispatchEvents(targetFullNameInput);
+      }
+    }
+
+    // 나머지 필드 처리 (이메일, 회사, 전화번호)
     Object.keys(settings.manualConfig).forEach(type => {
+      // 이름 관련 필드는 위에서 처리했으므로 건너뜁니다.
+      if (type === 'lastName' || type === 'firstName' || type === 'fullName') return;
+
       const config = settings.manualConfig[type];
       if (!config.enabled || !config.text) return;
 
@@ -103,7 +174,6 @@ function fillFormsInPage(settings) {
         let fakeData = null;
         switch (type) {
           case 'email': fakeData = getFakeEmail(); break;
-          case 'name': fakeData = getFakeFullName(); break;
           case 'company': fakeData = getFakeCompany(); break;
           case 'phone': fakeData = getFakePhoneNumber(); break; // 수동에선 기본 하이픈 형태로
         }
@@ -113,6 +183,7 @@ function fillFormsInPage(settings) {
         }
       }
     });
+
   } else {
     // --- 자동 모드 로직 (기존 content.js 로직) ---
     function getFieldType(input) {
@@ -159,7 +230,7 @@ function fillFormsInPage(settings) {
           const pattern = input.getAttribute('pattern');
           const maxLength = input.getAttribute('maxlength');
           let phoneFormat = 'hyphen';
-          if ((pattern && (pattern.includes('\d') || pattern.includes('[0-9]')) && !pattern.includes('-')) || (maxLength && parseInt(maxLength, 10) < 13)) {
+          if ((pattern && (pattern.includes('\\d') || pattern.includes('[0-9]')) && !pattern.includes('-')) || (maxLength && parseInt(maxLength, 10) < 13)) {
             phoneFormat = 'digits';
           }
           fakeData = getFakePhoneNumber(phoneFormat);
